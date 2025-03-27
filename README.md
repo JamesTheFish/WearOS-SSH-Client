@@ -1,4 +1,4 @@
-# WearOS SSH Web Interface with Persistent tmux Session
+# WearOS SSH Web Interface
 
 This project is a minimalist, touch-optimized web interface designed for WearOS or small-screen devices. It allows you to send remote SSH commands to a target device using a persistent `tmux` session, maintaining session state across multiple commands.
 
