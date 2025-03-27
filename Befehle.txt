@@ -1,0 +1,7 @@
+clear
+ls
+sudo airmon-ng start wlan1
+sudo airmon-ng check kill
+sudo airodump-ng wlan1
+timeout 10s ping google.com
+timeout 10s sudo airodump-ng wlan1

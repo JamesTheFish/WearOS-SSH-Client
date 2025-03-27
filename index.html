@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>WearOS SSH</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      width: 90vw;
+      max-width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input, select, button {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      width: 100%;
+    }
+
+    input, select {
+      background-color: #222;
+      color: #fff;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      font-weight: bold;
+    }
+
+    button:active {
+      background-color: #388E3C;
+    }
+
+    .logout-btn {
+      width: 50%;
+      margin: 10px auto 0 auto;
+      font-size: 12px;
+      padding: 8px;
+      background-color: #f44336;
+      color: white;
+      border-radius: 6px;
+      border: none;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #result {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 12px;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Login -->
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <input type="text" id="host" placeholder="Host" required />
+      <input type="text" id="user" placeholder="Username" required />
+      <input type="password" id="pass" placeholder="Password" required />
+      <button type="submit">Login </button>
+    </form>
+
+    <!-- Befehle -->
+    <form id="commandForm" class="hidden" onsubmit="sendCommand(event)">
+      <select id="cmd"></select>
+      <input type="text" id="customCmd" placeholder="Custom-Befehl (optional)" />
+      <button type="submit">Execute</button>
+      <div id="result"></div>
+      <button type="button" class="logout-btn" onclick="logout()">Logout</button>
+    </form>
+  </div>
+
+  <script>
+    let session = {};
+
+    function handleLogin(e) {
+      e.preventDefault();
+      session.host = document.getElementById("host").value;
+      session.user = document.getElementById("user").value;
+      session.pass = document.getElementById("pass").value;
+
+      document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("commandForm").classList.remove("hidden");
+
+      loadCommands();
+    }
+
+    async function loadCommands() {
+      const res = await fetch("commands.php");
+      const cmds = await res.json();
+
+      const select = document.getElementById("cmd");
+      select.innerHTML = "";
+      cmds.forEach(cmd => {
+        const option = document.createElement("option");
+        option.value = cmd;
+        option.textContent = cmd;
+        select.appendChild(option);
+      });
+    }
+
+    async function sendCommand(e) {
+      e.preventDefault();
+
+      const inputField = document.getElementById("customCmd");
+      const rawInput = inputField.value.trim();
+      const fallbackCmd = document.getElementById("cmd").value;
+      const finalCmd = rawInput !== "" ? rawInput : fallbackCmd;
+
+      const data = {
+        host: session.host,
+        user: session.user,
+        pass: session.pass,
+        cmd: finalCmd
+      };
+
+      const res = await fetch("server.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const text = await res.text();
+      document.getElementById("result").innerText = text;
+      inputField.value = "";
+    }
+
+    async function logout() {
+      const confirmLogout = confirm("Session wirklich beenden?");
+      if (!confirmLogout) return;
+
+      const data = {
+        host: session.host,
+        user: session.user,
+        pass: session.pass
+      };
+
+      const res = await fetch("logout.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const text = await res.text();
+      document.getElementById("result").innerText = text;
+
+      document.getElementById("commandForm").classList.add("hidden");
+      document.getElementById("loginForm").classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
